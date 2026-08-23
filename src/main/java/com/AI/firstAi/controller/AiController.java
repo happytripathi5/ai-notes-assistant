@@ -62,6 +62,12 @@ public class AiController {
 
     }
 
+    @GetMapping("/note/askWithAi")
+    public String askWithAi(@RequestParam String question){
+        List<Note>notes= noteService.get();
+        return aiService.askQuestionsToAi(notes,question);
+    }
+
 
 
 
