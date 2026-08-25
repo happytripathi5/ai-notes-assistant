@@ -1,7 +1,9 @@
 package com.AI.firstAi.service;
 
+import com.AI.firstAi.dto.KeyPointResponse;
 import com.AI.firstAi.entity.Note;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,10 +14,13 @@ public class AiService {
 
     NoteService noteService;
 
-    private static final String SYSTEM_INSTRUCTION = "You are a study assistant.\n" +
-            "Use only the provided notes.\n" +
-            "Don't use outside knowledge.\n" +
-            "If something isn't in the notes, don't make it up.";
+    private static final String SYSTEM_INSTRUCTION =
+            "You are a study assistant.\n" +
+                    "Use only the provided notes.\n" +
+                    "Don't use outside knowledge.\n" +
+                    "If something isn't in the notes, don't make it up.\n" +
+                    "Return only valid JSON.\n" +
+                    "Do not include markdown, code fences, explanations, or extra text.";
 
     public AiService(ChatClient.Builder builder, NoteService noteService) {
         this.chatClient = builder.build();
@@ -56,13 +61,21 @@ public class AiService {
     //right now everything is in the same method, to convert note into string we will create a private helper method down of this method to return the note as string--DONE IT
     //CREATED A STATIC FINAL VARIABLE FOR SYSTEM PROMPT ON TOP OF THE PAGE
 
-    public String generateKeyPoints() {
+    public List<KeyPointResponse> generateKeyPoints() {
         List<Note> notes = noteService.get();
         //LETS MAKE THE STR TAKE THE NOTES as string and for this special method add one more thing to generate the key points in given format;
-        String str = buildNoteContext(notes) + "\n return only 2 key points of each note in this format: \nTitle: \nKeyPoints: \nFirstkeypoint: \nSeconkeyPoint: \nlisten one thing for keypoints just give the points in the given format";
+        String str = buildNoteContext(notes)
+                + "\nReturn exactly 2 key points for each note."
+                + "\nReturn one JSON object for each note."
+                + "\nReturn all objects inside a JSON array."
+                + "\nEach object must contain exactly these fields:"
+                + "\ntitle"
+                + "\nfirstKeyPoint"
+                + "\nsecondKeyPoint";
 
+        return chatClient.prompt(str).system(SYSTEM_INSTRUCTION).call().entity(new ParameterizedTypeReference<List<KeyPointResponse>>() {
+        });
 
-        return chatClient.prompt(str).system(SYSTEM_INSTRUCTION).call().content();
 
 
     }

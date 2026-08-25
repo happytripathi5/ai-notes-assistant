@@ -1,5 +1,6 @@
 package com.AI.firstAi.controller;
 
+import com.AI.firstAi.dto.KeyPointResponse;
 import com.AI.firstAi.entity.Note;
 import com.AI.firstAi.service.AiService;
 import com.AI.firstAi.service.NoteService;
@@ -69,6 +70,12 @@ public class AiController {
     }
 
 
+    //26August
+    @GetMapping ("/note/getKeyPoints")
+    public List<KeyPointResponse> getKeyPointDTO(){
+        return aiService.generateKeyPoints();
+
+    }
 
 
 
