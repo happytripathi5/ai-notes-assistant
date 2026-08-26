@@ -6,13 +6,17 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.lang.reflect.Array;
+import java.util.*;
 
 @Service
 public class AiService {
     ChatClient chatClient;
 
     NoteService noteService;
+
+    private static final Set<String> STOP_WORDS = new HashSet<>(Arrays.asList("where", "what", "is", "how", "why", "are"));
+
 
     private static final String SYSTEM_INSTRUCTION =
             "You are a study assistant.\n" +
@@ -21,6 +25,14 @@ public class AiService {
                     "If something isn't in the notes, don't make it up.\n" +
                     "Return only valid JSON.\n" +
                     "Do not include markdown, code fences, explanations, or extra text.";
+
+
+    private static final String QUESTION_SYSTEM_INSTRUCTION =
+            "You are a study assistant.\n" +
+                    "Use only the provided notes to answer the question.\n" +
+                    "Do not use outside knowledge.\n" +
+                    "If the answer is not present in the notes, say you don't know based on the notes.\n" +
+                    "Answer the question normally and clearly.";
 
     public AiService(ChatClient.Builder builder, NoteService noteService) {
         this.chatClient = builder.build();
@@ -77,7 +89,6 @@ public class AiService {
         });
 
 
-
     }
     //created a helper method for just above class, and specify here if any else-- to convert all notes in the string
 
@@ -95,4 +106,96 @@ public class AiService {
         return "Here is my all notes: \n" + sb.toString();
 
     }
+
+    public List<String> extractKeywords(String Question) {
+        List<String> list = new ArrayList<>();
+        String[] words = Question.split(" ");
+
+        for (String str : words) {
+            str = str.toLowerCase();
+            str = str.replaceAll("[^a-zA-Z]", "");
+            if (!STOP_WORDS.contains(str)) {
+                list.add(str);
+
+            }
+        }
+
+        return list;
+    }
+
+
+    public List<Note> getRelevantNotes(List<String> list) {
+
+        List<Note> relevantNotes = new ArrayList<>();
+
+        List<Note> notes = noteService.get();
+
+        for (Note notee : notes) {
+
+            String title = notee.getTitle().toLowerCase();
+
+            for (String keyword : list) {
+
+                if (title.contains(keyword)) {
+                    relevantNotes.add(notee);
+                    break;
+                }
+            }
+        }
+        return relevantNotes;
+    }
+
+
+//    public String askquestionAiMatch(String question) {
+//
+//        System.out.println("1. Question received: " + question);
+//
+//        List<String> list = extractKeywords(question);
+//        System.out.println("2. Keywords: " + list);
+//
+//        List<Note> relevantNotes = getRelevantNotes(list);
+//        System.out.println("3. Relevant notes: " + relevantNotes.size());
+//
+//        String context = buildNoteContext(relevantNotes);
+//        System.out.println("4. Context built");
+//
+//        String prompt = context + "\nMy question is: " + question;
+//        System.out.println("5. Calling AI...");
+//
+//        return chatClient.prompt(prompt)
+//                .system(SYSTEM_INSTRUCTION)
+//                .call()
+//                .content();
+//    }
+//
+//
+//
+//
+//    }
+public String askquestionAiMatch(String question) {
+
+    System.out.println("1. Question received: " + question);
+
+    List<String> list = extractKeywords(question);
+    System.out.println("2. Keywords: " + list);
+
+    List<Note> relevantNotes = getRelevantNotes(list);
+    System.out.println("3. Relevant notes: " + relevantNotes.size());
+
+    String context = buildNoteContext(relevantNotes);
+    System.out.println("4. Context built");
+
+    String prompt = context + "\nMy question is: " + question;
+    System.out.println("5. Calling AI...");
+
+    String response = chatClient.prompt(prompt)
+            .system(QUESTION_SYSTEM_INSTRUCTION)
+            .call()
+            .content();
+
+    System.out.println("6. AI response received");
+    System.out.println(response);
+
+    return response;
+}
 }

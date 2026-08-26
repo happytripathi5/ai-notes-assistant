@@ -78,5 +78,11 @@ public class AiController {
     }
 
 
+    @GetMapping("/note/ai/getAiQuestionUsingrelevant")
+    public String getAiResponseTitleMatching(@RequestParam String question){
+            return aiService.askquestionAiMatch(question);
+    }
+
+
 
 }
