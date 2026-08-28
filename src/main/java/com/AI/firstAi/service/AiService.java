@@ -133,10 +133,17 @@ public class AiService {
         for (Note notee : notes) {
 
             String title = notee.getTitle().toLowerCase();
+            String content=notee.getContent().toLowerCase();
+
 
             for (String keyword : list) {
 
                 if (title.contains(keyword)) {
+                    relevantNotes.add(notee);
+                    break;
+                }
+
+                else if(content.contains(keyword)){
                     relevantNotes.add(notee);
                     break;
                 }
